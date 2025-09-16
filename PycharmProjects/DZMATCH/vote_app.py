@@ -118,7 +118,7 @@ def save_vote(nom, votes):
                 range="Feuille 1!A:E",
                 valueInputOption="RAW",
                 body={"values": [[nom, cat, candidat, i, point]]}
-            )
+            ).execute()  # 🔹 important pour que l’append soit effectif
     return True
 
 
@@ -140,16 +140,11 @@ if submitted:
 # -------------------------------
 st.header("📊 Classements en temps réel")
 try:
-    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Feuille1!A:E").execute()
+    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Feuille 1!A:E").execute()
     values = result.get("values", [])
     if values:
         df = pd.DataFrame(values[1:], columns=values[0])
         df["Points"] = pd.to_numeric(df["Points"], errors="coerce")
-        git
-        add
-        vote_app.py
-        git
-        add.idea / workspace.xml
 
         for cat in categories:
             st.subheader(cat)
