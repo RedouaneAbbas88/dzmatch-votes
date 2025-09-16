@@ -4,7 +4,7 @@ import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 
-st.title("🏆 DZMatch Votes")
+st.title("🏆 North Africa")
 
 # -------------------------------
 # 🔹 Charger les credentials depuis Streamlit secrets
