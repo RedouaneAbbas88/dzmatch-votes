@@ -7,27 +7,32 @@ from googleapiclient.discovery import build
 st.title("🏆 DZMatch Votes")
 
 # -------------------------------
-# 🔹 Lire les credentials depuis le fichier JSON
+# 🔹 Charger les credentials depuis Streamlit secrets
 # -------------------------------
-JSON_FILE = r"C:\Users\Pc-HP\PycharmProjects\DZMATCH\dzmatch-votes-472309-844fb4fc96b1.json"
-with open(JSON_FILE, "r") as f:
-    creds_dict = json.load(f)
-
-creds = service_account.Credentials.from_service_account_info(
-    creds_dict,
-    scopes=["https://www.googleapis.com/auth/spreadsheets"]
-)
+try:
+    creds_dict = json.loads(st.secrets["google"]["GOOGLE_CREDS_JSON"])
+    creds = service_account.Credentials.from_service_account_info(
+        creds_dict,
+        scopes=["https://www.googleapis.com/auth/spreadsheets"]
+    )
+except Exception as e:
+    st.error(f"Erreur lors du chargement des credentials : {e}")
+    st.stop()
 
 # -------------------------------
 # 🔹 ID du Google Sheet
 # -------------------------------
-SPREADSHEET_ID = "1thkysC3aTtn7XZuWuKfjcV3thctcGV4sCZlz3eQmIn4"
+SPREADSHEET_ID = st.secrets["google"]["SPREADSHEET_ID"]
 
 # -------------------------------
 # 🔹 Connexion à Google Sheets
 # -------------------------------
-service = build("sheets", "v4", credentials=creds)
-sheet = service.spreadsheets()
+try:
+    service = build("sheets", "v4", credentials=creds)
+    sheet = service.spreadsheets()
+except Exception as e:
+    st.error(f"Erreur lors de la connexion à Google Sheets : {e}")
+    st.stop()
 
 # -------------------------------
 # 🔹 Barème des points
@@ -68,7 +73,7 @@ categories = {
 }
 
 # -------------------------------
-# 🔹 Interface Streamlit pour le vote
+# 🔹 Interface Streamlit
 # -------------------------------
 st.write("Votez pour vos favoris dans chaque catégorie (TOP 5).")
 nom_votant = st.text_input("📝 Entrez votre nom et prénom :")
@@ -91,33 +96,34 @@ with st.form("vote_form"):
 # 🔹 Fonction pour sauvegarder le vote
 # -------------------------------
 def save_vote(nom, votes):
-    # Lire les données existantes
-    result = sheet.values().get(
-        spreadsheetId=SPREADSHEET_ID,
-        range="Feuille 1!A:E"
-    ).execute()
-    values = result.get("values", [])
+    try:
+        result = sheet.values().get(
+            spreadsheetId=SPREADSHEET_ID,
+            range="Feuille 1!A:E"
+        ).execute()
+        values = result.get("values", [])
 
-    if values:
-        df = pd.DataFrame(values[1:], columns=values[0])
-    else:
-        df = pd.DataFrame(columns=["Nom", "Categorie", "Candidat", "Position", "Points"])
+        if values:
+            df = pd.DataFrame(values[1:], columns=values[0])
+        else:
+            df = pd.DataFrame(columns=["Nom", "Categorie", "Candidat", "Position", "Points"])
 
-    # Vérifier si le votant a déjà voté
-    if not df.empty and nom in df["Nom"].values:
+        if not df.empty and nom in df["Nom"].values:
+            return False
+
+        for cat, top5 in votes.items():
+            for i, candidat in enumerate(top5, start=1):
+                point = points.get(i, 0)
+                sheet.values().append(
+                    spreadsheetId=SPREADSHEET_ID,
+                    range="Feuille 1!A:E",
+                    valueInputOption="RAW",
+                    body={"values": [[nom, cat, candidat, i, point]]}
+                ).execute()
+        return True
+    except Exception as e:
+        st.error(f"Erreur lors de la sauvegarde du vote : {e}")
         return False
-
-    # Ajouter les votes
-    for cat, top5 in votes.items():
-        for i, candidat in enumerate(top5, start=1):
-            point = points.get(i, 0)
-            sheet.values().append(
-                spreadsheetId=SPREADSHEET_ID,
-                range="Feuille 1!A:E",
-                valueInputOption="RAW",
-                body={"values": [[nom, cat, candidat, i, point]]}
-            ).execute()
-    return True
 
 # -------------------------------
 # 🔹 Traitement du vote
@@ -130,14 +136,17 @@ if submitted:
         if success:
             st.success(f"Merci {nom_votant}, votre vote a été enregistré ! 🎉")
         else:
-            st.error("⚠️ Vous avez déjà voté.")
+            st.error("⚠️ Vous avez déjà voté ou une erreur est survenue.")
 
 # -------------------------------
-# 🔹 Affichage des résultats en temps réel
+# 🔹 Affichage des résultats
 # -------------------------------
 st.header("📊 Classements en temps réel")
 try:
-    result = sheet.values().get(spreadsheetId=SPREADSHEET_ID, range="Feuille 1!A:E").execute()
+    result = sheet.values().get(
+        spreadsheetId=SPREADSHEET_ID,
+        range="Feuille1!A:E"
+    ).execute()
     values = result.get("values", [])
     if values:
         df = pd.DataFrame(values[1:], columns=values[0])
