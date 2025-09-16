@@ -9,7 +9,7 @@ st.title("🏆 DZMatch Votes")
 # -------------------------------
 # 🔹 Lire les credentials depuis le fichier JSON
 # -------------------------------
-JSON_FILE = "dzmatch-votes-472309-844fb4fc96b1.json"
+JSON_FILE = r"C:\Users\Pc-HP\PycharmProjects\DZMATCH\dzmatch-votes-472309-844fb4fc96b1.json"
 with open(JSON_FILE, "r") as f:
     creds_dict = json.load(f)
 
@@ -68,10 +68,9 @@ categories = {
 }
 
 # -------------------------------
-# 🔹 Interface Streamlit
+# 🔹 Interface Streamlit pour le vote
 # -------------------------------
 st.write("Votez pour vos favoris dans chaque catégorie (TOP 5).")
-
 nom_votant = st.text_input("📝 Entrez votre nom et prénom :")
 vote_data = {}
 
@@ -87,7 +86,6 @@ with st.form("vote_form"):
         vote_data[cat] = top5
 
     submitted = st.form_submit_button("✅ Envoyer mon vote")
-
 
 # -------------------------------
 # 🔹 Fonction pour sauvegarder le vote
@@ -118,9 +116,8 @@ def save_vote(nom, votes):
                 range="Feuille 1!A:E",
                 valueInputOption="RAW",
                 body={"values": [[nom, cat, candidat, i, point]]}
-            ).execute()  # 🔹 important pour que l’append soit effectif
+            ).execute()
     return True
-
 
 # -------------------------------
 # 🔹 Traitement du vote
